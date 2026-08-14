@@ -1,18 +1,19 @@
-name: Publish to npm
+name: Publish to GitHub Packages
 
-# 打 v* 标签（如 v1.0.0）时自动发布到 npm registry。
-# 前置：在仓库 Settings → Secrets and variables → Actions 里新增 NPM_TOKEN
-#（npm 的 Automation access token，权限选 Read and write）。
+# 打 v* 标签（如 v0.1.0）时自动发布到 GitHub Packages（npm.pkg.github.com）。
+# 使用自动的 GITHUB_TOKEN，无需配置任何 secret。
 on:
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,9 +22,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://npm.pkg.github.com'
 
       - name: Publish
         run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

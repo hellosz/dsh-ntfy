@@ -1,4 +1,4 @@
-# dsh-ntfy
+# @hellosz/dsh-ntfy
 
 DeepSeek Harness (DSH) host-plane 插件：当 agent **需要人工确认**（`approval/request`）或
 **完成任务**（`agent/status` → `idle`）时，通过 [ntfy](https://ntfy.sh) 向手机推送通知。
@@ -33,12 +33,18 @@ install -m 0644 index.mjs "$DSH_HOME/profiles/$PROFILE/ntfy-notify.mjs"
 # 4. 重启 DSH
 ```
 
-### 方式 B：作为 npm 依赖安装（发布到 npm 后可用）
+### 方式 B：作为依赖安装（GitHub Packages）
 
 ```bash
+# 1. 配置 registry 认证（~/.npmrc 或项目 .npmrc）
+#    @hellosz:registry=https://npm.pkg.github.com
+#    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+
+# 2. 安装进 DSH profile
 cd "$DSH_HOME/profiles/$PROFILE"
-pnpm add dsh-ntfy
-# 然后 cordis.patch.yml 里把 name 写成 dsh-ntfy
+pnpm add @hellosz/dsh-ntfy
+
+# 3. cordis.patch.yml 里把 name 写成 @hellosz/dsh-ntfy
 ```
 
 ## 配置（写入 cordis.patch.yml）
@@ -46,7 +52,7 @@ pnpm add dsh-ntfy
 ```yaml
 - insert:
     - id: ntfy-notify
-      name: ./ntfy-notify.mjs        # 方式 A；方式 B 用 dsh-ntfy
+      name: ./ntfy-notify.mjs              # 方式 A；方式 B 用 @hellosz/dsh-ntfy
       config:
         topic: your-secret-topic   # 必填：你的 ntfy 主题名
         machine: my-machine        # 可选：默认取主机名
@@ -83,17 +89,15 @@ pnpm add dsh-ntfy
 
 ## 发布（维护者）
 
-打一个 `v*` 标签（如 `v1.0.0`）会触发 GitHub Actions 自动发布到 npm。
+打一个 `v*` 标签（如 `v0.1.0`）会触发 GitHub Actions 自动发布到 **GitHub Packages**
+（`npm.pkg.github.com`），使用自动的 `GITHUB_TOKEN`，无需配置任何 secret。
 
 ```bash
-# 1. 在仓库 Settings → Secrets and variables → Actions 里配 NPM_TOKEN
-#    （npm 的 Automation access token）
-# 2. 本地升版本并打标签（会自动改 package.json 的 version、提交并打 tag）
-npm version patch   # 或 minor / major
+npm version patch   # 或 minor / major；自动改 version + 提交 + 打 tag
 git push --follow-tags
 ```
 
-首次发布前确认：`dsh-ntfy` 包名在 npm 上可用，且本机已 `npm login`。
+包名 `@hellosz/dsh-ntfy`，`publishConfig.registry` 已指向 `https://npm.pkg.github.com`。
 
 ## License
 
