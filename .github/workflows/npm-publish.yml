@@ -1,7 +1,9 @@
-name: Publish to GitHub Packages
+name: Publish to npm
 
-# 打 v* 标签（如 v0.1.0）时自动发布到 GitHub Packages（npm.pkg.github.com）。
-# 使用自动的 GITHUB_TOKEN，无需配置任何 secret。
+# 打 v* 标签（如 v0.1.0）时通过 npm OIDC Trusted Publishing 自动发布到
+# registry.npmjs.org。无需任何 token：id-token: write 让 npm 用 OIDC 认证。
+#
+# 前置（一次性，npmjs.com）：把本仓库设为 dsh-ntfy 的 trusted publisher。
 on:
   push:
     tags:
@@ -9,7 +11,7 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write   # npm OIDC trusted publishing 必需
 
 jobs:
   publish:
@@ -22,9 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish --access public --provenance
