@@ -12,15 +12,40 @@ DeepSeek Harness (DSH) host-plane 插件：当 agent **需要人工确认**（`a
 - 发送走 `ctx.get('subprocess')` 起 `/usr/bin/curl`，非阻塞、不打断审批 waterfall
 - **全部标识符通过 `config` 配置，模块零硬编码，可直接分发**
 
-## 安装（两步）
+## 安装
 
-1. 把 `index.mjs` 放到 profile 目录（与 `cordis.patch.yml` 同级）；或 `pnpm add dsh-ntfy` 后按包名引用。
-2. 在 `cordis.patch.yml` 追加一行 `insert`：
+前置：已有一个 ntfy 订阅（`https://ntfy.sh/<topic>`），以及一个 DSH profile
+（默认在 `$DSH_HOME/profiles/<name>/`，`web` 是最常见的 name）。
+
+### 方式 A：复制文件（无需发布，立即可用）
+
+```bash
+# 1. 获取本仓库
+git clone https://github.com/hellosz/dsh-ntfy.git
+cd dsh-ntfy
+
+# 2. 把插件复制进你的 profile 目录（把 web 换成你的 profile 名）
+PROFILE=web
+install -m 0644 index.mjs "$DSH_HOME/profiles/$PROFILE/ntfy-notify.mjs"
+
+# 3. 编辑 $DSH_HOME/profiles/$PROFILE/cordis.patch.yml，追加下方「配置」段
+# 4. 重启 DSH
+```
+
+### 方式 B：作为 npm 依赖安装（发布到 npm 后可用）
+
+```bash
+cd "$DSH_HOME/profiles/$PROFILE"
+pnpm add dsh-ntfy
+# 然后 cordis.patch.yml 里把 name 写成 dsh-ntfy
+```
+
+## 配置（写入 cordis.patch.yml）
 
 ```yaml
 - insert:
     - id: ntfy-notify
-      name: ./index.mjs        # 或包名 dsh-ntfy
+      name: ./ntfy-notify.mjs        # 方式 A；方式 B 用 dsh-ntfy
       config:
         topic: your-secret-topic   # 必填：你的 ntfy 主题名
         machine: my-machine        # 可选：默认取主机名
@@ -30,9 +55,7 @@ DeepSeek Harness (DSH) host-plane 插件：当 agent **需要人工确认**（`a
         notifyDone: true           # 可选：完成通知
 ```
 
-重启 DSH 生效。
-
-## 配置
+改完重启 DSH 生效。
 
 | 键 | 必填 | 默认 | 说明 |
 |---|---|---|---|
