@@ -5,6 +5,8 @@
  *   - approval/request          需要人工确认
  *   - agent/status -> idle      任务完成（仅顶层会话，过滤 subagent 噪音）
  *
+ * 通知正文携带：会话名称（session title）+ 短会话 id + 项目 + 工具/原因，便于多会话判断。
+ *
  * 全部标识符通过 row 的 config 传入，模块本身不含任何硬编码的个人 topic / 机器名：
  *   topic         (必填) ntfy 主题名
  *   server        (可选) 默认 https://ntfy.sh
@@ -13,7 +15,7 @@
  *   notifyApproval(可选) 默认 true
  *   notifyDone    (可选) 默认 true
  *
- * 依赖：host 基础层提供的 subprocess 服务 + 系统 /usr/bin/curl。无第三方依赖。
+ * 依赖：host 基础层提供的 subprocess / sessionTitle 服务 + 系统 /usr/bin/curl。无第三方依赖。
  */
 import { hostname } from 'node:os'
 
@@ -22,6 +24,7 @@ export default {
 
   apply(ctx, config = {}) {
     const subprocess = ctx.get('subprocess')
+    const sessionTitle = ctx.get('sessionTitle')
 
     const topic = typeof config.topic === 'string' ? config.topic.trim() : ''
     if (!topic) {
@@ -59,6 +62,22 @@ export default {
         return parts.length ? parts[parts.length - 1] : String(cwd)
       }
       return id ? String(id) : 'unknown'
+    }
+
+    // 会话标签：优先取会话名称（session title），并附短 id 便于同一项目多会话区分
+    function sessionLabel(agent) {
+      let title = ''
+      let id = ''
+      try { id = (agent && agent.id) || '' } catch (_) {}
+      try {
+        if (sessionTitle !== undefined) {
+          const snap = sessionTitle.get(agent && agent.session)
+          title = (snap && snap.title) || ''
+        }
+      } catch (_) {}
+      const shortId = id ? String(id).slice(0, 8) : ''
+      if (title) return shortId ? title + ' #' + shortId : title
+      return shortId ? '#' + shortId : 'unknown'
     }
 
     function send(title, priority, tags, body) {
@@ -107,8 +126,11 @@ export default {
           const tool = (req && req.toolName) || 'unknown'
           const reason = (req && req.reason) || ''
           const proj = projectOf(req && req.agent)
+          const sess = sessionLabel(req && req.agent)
           if (!cooled('approval:' + proj)) {
-            send(machine + ' [dsh]: 需要确认', 'high', 'warning,dsh,' + machine, '工具: ' + tool + (reason ? '\n原因: ' + reason : '') + '\n项目: ' + proj)
+            const lines = ['会话: ' + sess, '项目: ' + proj, '工具: ' + tool]
+            if (reason) lines.push('原因: ' + reason)
+            send(machine + ' [dsh]: 需要确认', 'high', 'warning,dsh,' + machine, lines.join('\n'))
           }
         } catch (err) {
           console.error('[dsh-ntfy] approval 处理异常: ' + (err && err.message))
@@ -126,8 +148,14 @@ export default {
           try { depth = agent && agent.session && agent.session.header && agent.session.header.delegationDepth } catch (_) {}
           if (depth) return
           const proj = projectOf(agent)
+          const sess = sessionLabel(agent)
           if (!cooled('done:' + proj)) {
-            send(machine + ' [dsh]: 完成', 'default', 'white_check_mark,dsh,' + machine, '项目: ' + proj + '\n状态: 等待输入')
+            send(
+              machine + ' [dsh]: 完成',
+              'default',
+              'white_check_mark,dsh,' + machine,
+              '会话: ' + sess + '\n项目: ' + proj + '\n状态: 等待输入',
+            )
           }
         } catch (err) {
           console.error('[dsh-ntfy] status 处理异常: ' + (err && err.message))
