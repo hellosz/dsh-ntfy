@@ -1,0 +1,12 @@
+{
+  "name": "dsh-ntfy",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness (DSH) host-plane plugin: push ntfy notifications when the agent needs approval or finishes a task.",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": { ".": "./index.mjs" },
+  "files": ["index.mjs", "README.md", "LICENSE"],
+  "keywords": ["deepseek", "dsh", "harness", "cordis", "ntfy", "notification"],
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/hellosz/dsh-ntfy.git" }
+}
