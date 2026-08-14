@@ -80,6 +80,20 @@ pnpm add dsh-ntfy
 
 无第三方 npm 依赖。
 
+## 发布（维护者）
+
+打一个 `v*` 标签（如 `v1.0.0`）会触发 GitHub Actions 自动发布到 npm。
+
+```bash
+# 1. 在仓库 Settings → Secrets and variables → Actions 里配 NPM_TOKEN
+#    （npm 的 Automation access token）
+# 2. 本地升版本并打标签（会自动改 package.json 的 version、提交并打 tag）
+npm version patch   # 或 minor / major
+git push --follow-tags
+```
+
+首次发布前确认：`dsh-ntfy` 包名在 npm 上可用，且本机已 `npm login`。
+
 ## License
 
 MIT
